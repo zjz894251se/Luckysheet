@@ -12,14 +12,14 @@ const luckysheetConfigsetting = {
     pointEditUpdate: null,
     pointEditZoom: 1,
 
-    userInfo: null,
+    userInfo: false,
     userMenuItem: [],
     myFolderUrl: null,
     functionButton: null,
 
     showConfigWindowResize: true,
     enableAddRow: true,
-    enableAddCol: true,
+    enableAddBackTop: true,
     enablePage: true,
     pageInfo: null,
     
@@ -34,6 +34,9 @@ const luckysheetConfigsetting = {
 
     defaultColWidth:73,
     defaultRowHeight:19,
+
+    defaultTextColor: '#000',
+    defaultCellColor: '#fff',
 }
 
 export default luckysheetConfigsetting;

@@ -10,7 +10,7 @@ import rhchInit from '../global/rhchInit';
 import editor from '../global/editor';
 import { luckysheetextendtable, luckysheetdeletetable } from '../global/extend';
 import { isRealNum } from '../global/validate';
-import { replaceHtml, getObjType, chatatABC } from '../utils/util';
+import { replaceHtml, getObjType, chatatABC, arrayRemoveItem } from '../utils/util';
 import { sheetHTML,luckysheetlodingHTML } from './constant';
 import server from './server';
 import luckysheetConfigsetting from './luckysheetConfigsetting';
@@ -19,6 +19,7 @@ import luckysheetsizeauto from './resize';
 import luckysheetPostil from './postil';
 import imageCtrl from './imageCtrl';
 import dataVerificationCtrl from './dataVerificationCtrl';
+import hyperlinkCtrl from './hyperlinkCtrl';
 import luckysheetFreezen from './freezen';
 import { createFilterOptions, labelFilterOptionState } from './filter';
 import { selectHightlightShow, selectionCopyShow } from './select';
@@ -28,6 +29,7 @@ import { renderChartShow } from '../expendPlugins/chart/plugin';
 import {changeSheetContainerSize, menuToolBarWidth} from './resize';
 import {zoomNumberDomBind} from './zoom';
 import menuButton from './menuButton';
+import method from '../global/method';
 
 const sheetmanage = {
     generateRandomSheetIndex: function(prefix) {
@@ -183,6 +185,33 @@ const sheetmanage = {
         return curindex;
     },
     getCurSheet: function() {
+        if (Store.luckysheetfile.length) {
+            let hasActive = false, indexs = []
+            Store.luckysheetfile.forEach(item => {
+                if ('undefined' === typeof item.index) {
+                    item.index = this.generateRandomSheetIndex()
+                }
+                if (indexs.includes(item.index)) {
+                    item.index = this.generateRandomSheetIndex()
+                }else {
+                    indexs.push(item.index)
+                }
+
+                if ('undefined' === typeof item.status) {
+                    item.status = 0
+                }
+                if (item.status == 1) {
+                    if (hasActive) {
+                        item.status = 0
+                    }else {
+                        hasActive = true
+                    }
+                }
+            })
+            if (!hasActive) {
+                Store.luckysheetfile[0].status = 1
+            }
+        }
         Store.currentSheetIndex = Store.luckysheetfile[0].index;
 
         for (let i = 0; i < Store.luckysheetfile.length; i++) {
@@ -232,7 +261,7 @@ const sheetmanage = {
         server.saveParam("sha", null, $.extend(true, {}, sheetconfig));
 
         if (Store.clearjfundo) {
-            Store.jfundo = [];
+            Store.jfundo.length  = 0;
             let redo = {};
             redo["type"] = "addSheet";
             redo["sheetconfig"] = $.extend(true, {}, sheetconfig);
@@ -245,21 +274,38 @@ const sheetmanage = {
     },
     setSheetHide: function(index) {
         let _this = this;
-
-        Store.luckysheetfile[_this.getSheetIndex(index)].hide = 1;
+        let currentIdx = _this.getSheetIndex(index);
+        Store.luckysheetfile[currentIdx].hide = 1;
         
         let luckysheetcurrentSheetitem = $("#luckysheet-sheets-item" + index);
         luckysheetcurrentSheetitem.hide();
 
         $("#luckysheet-sheet-area div.luckysheet-sheets-item").removeClass("luckysheet-sheets-item-active");
         
-        let indicator = luckysheetcurrentSheetitem.nextAll(":visible");
-        if (luckysheetcurrentSheetitem.nextAll(":visible").length > 0) {
-            indicator = indicator.eq(0).data("index");
+        let indicator;
+        if(luckysheetConfigsetting.showsheetbarConfig.sheet){
+            indicator = luckysheetcurrentSheetitem.nextAll(":visible");
+            if (luckysheetcurrentSheetitem.nextAll(":visible").length > 0) {
+                indicator = indicator.eq(0).data("index");
+            }
+            else {
+                indicator = luckysheetcurrentSheetitem.prevAll(":visible").eq(0).data("index");
+            }
+        }else{
+            let  nextActiveIdx , showSheetIdxs = [];
+            Store.luckysheetfile.forEach((ele,index)=>{
+                if(1 !== ele.hide) showSheetIdxs.push(index);
+            });
+            let len = showSheetIdxs.length;
+            if(1 === len){
+                nextActiveIdx = showSheetIdxs[0];
+            }else{
+                nextActiveIdx = showSheetIdxs[len-1] > currentIdx ? showSheetIdxs.find(e => e>currentIdx ) : showSheetIdxs[len-1];
+            }
+
+            indicator = Store.luckysheetfile[nextActiveIdx].index;
         }
-        else {
-            indicator = luckysheetcurrentSheetitem.prevAll(":visible").eq(0).data("index");
-        }
+        
         $("#luckysheet-sheets-item" + indicator).addClass("luckysheet-sheets-item-active");
         
         _this.changeSheetExec(indicator);
@@ -314,6 +360,24 @@ const sheetmanage = {
         });
 
         server.saveParam("shr", null, orders);
+
+        Store.luckysheetfile.sort((x, y) => {
+            let order_x = x.order;
+            let order_y = y.order;
+    
+            if(order_x != null && order_y != null){
+                return order_x - order_y;
+            }
+            else if(order_x != null){
+                return -1;
+            }
+            else if(order_y != null){
+                return 1;
+            }
+            else{
+                return 1;
+            }
+        })
     },
     createSheet: function() { //修复拖动sheet更新后台后，重新打开显示错误
         let _this = this;
@@ -372,8 +436,11 @@ const sheetmanage = {
             $c.scrollLeft(scrollLeftpx - 10);
 
             if (c_width >= winW * 0.7) {
-                $("#luckysheet-sheet-area .luckysheet-sheets-scroll").css("display", "inline-block");
-                $("#luckysheet-sheet-container .docs-sheet-fade-left").show();
+                if(luckysheetConfigsetting.showsheetbarConfig.sheet){
+                    $("#luckysheet-sheet-area .luckysheet-sheets-scroll").css("display", "inline-block");
+                    $("#luckysheet-sheet-container .docs-sheet-fade-left").show();
+                }
+                
             }
         }, 1)
     },
@@ -691,17 +758,26 @@ const sheetmanage = {
             colwidth = c2 + 1;
         }
 
+        //钩子函数 表格创建之前触发
+        if(typeof luckysheetConfigsetting.beforeCreateDom == "function" ){
+            luckysheetConfigsetting.beforeCreateDom(luckysheet);
+        }
+
+        if(typeof luckysheetConfigsetting.workbookCreateBefore == "function"){
+            luckysheetConfigsetting.workbookCreateBefore(luckysheet);
+        }
+
         // Store.flowdata = data;
 
         luckysheetcreatedom(colwidth, rowheight, data, menu, title);
 
         setTimeout(function () {
-            tooltip.createHoverTip("#luckysheet_info_detail" ,".luckysheet_info_detail_title, .luckysheet_info_detail_input, .luckysheet_info_detail_update");
+            tooltip.createHoverTip("#luckysheet_info_detail" ,".luckysheet_info_detail_back, .luckysheet_info_detail_input, .luckysheet_info_detail_update");
             tooltip.createHoverTip("#luckysheet-wa-editor" ,".luckysheet-toolbar-menu-button, .luckysheet-toolbar-button, .luckysheet-toolbar-combo-button");
 
             Store.luckysheetTableContentHW = [
                 $("#luckysheet-cell-main").width() + Store.rowHeaderWidth - Store.cellMainSrollBarSize, 
-                $("#luckysheet-cell-main").height() + Store.columeHeaderHeight - Store.cellMainSrollBarSize
+                $("#luckysheet-cell-main").height() + Store.columnHeaderHeight - Store.cellMainSrollBarSize
             ];
             $("#luckysheetTableContent, #luckysheetTableContentF").attr({ 
                 width: Math.ceil(Store.luckysheetTableContentHW[0] * Store.devicePixelRatio), 
@@ -762,14 +838,17 @@ const sheetmanage = {
                         }
                     }
 
-                    //钩子函数 表格创建之前触发
-                    if(typeof luckysheetConfigsetting.beforeCreateDom == "function" ){
-                        luckysheetConfigsetting.beforeCreateDom(luckysheet);
-                    }
+                    // 此处已经渲染完成表格，应该挪到前面
+                    // //钩子函数 表格创建之前触发
+                    // if(typeof luckysheetConfigsetting.beforeCreateDom == "function" ){
+                    //     luckysheetConfigsetting.beforeCreateDom(luckysheet);
+                    // }
 
-                    if(typeof luckysheetConfigsetting.workbookCreateBefore == "function"){
-                        luckysheetConfigsetting.workbookCreateBefore(luckysheet);
-                    }
+                    // if(typeof luckysheetConfigsetting.workbookCreateBefore == "function"){
+                    //     luckysheetConfigsetting.workbookCreateBefore(luckysheet);
+                    // }
+
+                    arrayRemoveItem(Store.asyncLoad,'core');
 
                     if(luckysheetConfigsetting.pointEdit){
                         setTimeout(function(){
@@ -818,8 +897,13 @@ const sheetmanage = {
                         sheetindex.push(item);
                     }
 
+                    // No request is sent if it is not linked to other worksheets
+                    if(sheetindex.length === 0){
+                        execF();
+                        return;
+                    }
                     $.post(loadSheetUrl, {"gridKey" : server.gridKey, "index": sheetindex.join(",")}, function (d) {
-                        let dataset = eval("(" + d + ")");
+                        let dataset = new Function("return " + d)();
                         
                         for(let item in dataset){
                             if(item == file["index"]){
@@ -905,6 +989,7 @@ const sheetmanage = {
         luckysheetPostil.buildAllPs(Store.flowdata);
 
         //图片
+        imageCtrl.currentImgId = null;
         imageCtrl.images = file.images;
         imageCtrl.allImagesShow();
         imageCtrl.init();
@@ -912,6 +997,10 @@ const sheetmanage = {
         //数据验证
         dataVerificationCtrl.dataVerification = file.dataVerification;
         dataVerificationCtrl.init();
+
+        //链接
+        hyperlinkCtrl.hyperlink = file.hyperlink;
+        hyperlinkCtrl.init();
         
         createFilterOptions(file["filter_select"], file["filter"]);
     },
@@ -1135,7 +1224,7 @@ const sheetmanage = {
                 let sheetindex = _this.checkLoadSheetIndex(file);
                 
                 $.post(loadSheetUrl, {"gridKey" : server.gridKey, "index": sheetindex.join(",")}, function (d) {
-                    let dataset = eval("(" + d + ")");
+                    let dataset = new Function("return " + d)();
                     file.celldata = dataset[index.toString()];
                     let data = _this.buildGridData(file);
 
@@ -1314,7 +1403,7 @@ const sheetmanage = {
         $("#luckysheet-cols-h-cells_0").css("width", Store.ch_width); //width更新
 
         $("#luckysheet-scrollbar-x div").width(Store.ch_width);
-        $("#luckysheet-scrollbar-y div").height(Store.rh_height + Store.columeHeaderHeight - Store.cellMainSrollBarSize - 3);
+        $("#luckysheet-scrollbar-y div").height(Store.rh_height + Store.columnHeaderHeight - Store.cellMainSrollBarSize - 3);
 
         //等待滚动条dom宽高计算完成后 初始化该表格滚动位置
         let index = this.getSheetIndex(Store.currentSheetIndex);
@@ -1365,6 +1454,9 @@ const sheetmanage = {
         return null;
     },
     changeSheetExec: function(index, isPivotInitial, isNewSheet) {
+        // 钩子函数
+        method.createHookFunction('sheetActivate', index, isPivotInitial, isNewSheet);
+        
         let $sheet = $("#luckysheet-sheets-item" + index);
 
         window.luckysheet_getcelldata_cache = null;
@@ -1391,8 +1483,11 @@ const sheetmanage = {
         });
 
         if (c_width >= containerW) {
-            $("#luckysheet-sheet-area .luckysheet-sheets-scroll").css("display", "inline-block");
-            $("#luckysheet-sheet-container .docs-sheet-fade-left").show();
+            if(luckysheetConfigsetting.showsheetbarConfig.sheet){
+                $("#luckysheet-sheet-area .luckysheet-sheets-scroll").css("display", "inline-block");
+                $("#luckysheet-sheet-container .docs-sheet-fade-left").show();
+            }
+            
         }
         else{
             $("#luckysheet-sheet-area .luckysheet-sheets-scroll").css("display", "none");
@@ -1684,7 +1779,7 @@ const sheetmanage = {
             let op = item.op, pos = item.pos;
 
             if(getObjType(value) != "object"){
-                value = eval('('+ value +')');
+                value = new Function("return " + value)();
             }
 
             let r = value.r, c = value.c;

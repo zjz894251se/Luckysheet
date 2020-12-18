@@ -3126,7 +3126,7 @@ export default {
         "t": 2,
         "d": "Returns the content of a cell, specified by row and column offset.",
         "a": "Content of cell specified by row and column offset.",
-        "m": [3, 3],
+        "m": [2, 3],
         "p": [{
             "name": "reference",
             "detail": "The array of cells to be offset into.",
@@ -8811,7 +8811,23 @@ export default {
             "repeat": "n",
             "type": "rangenumber"
         }]
-    }],
+    },
+    {
+        "n": "EVALUATE",
+        "t": "3",
+        "d": "Evaluate a formula or expression expressed in words and return the result",
+        "a": "Evaluate according to literal formula or expression.",
+        "m": [1, 1],
+        "p": [{
+            "name": "expression",
+            "example": '"A1+5*2^2"',
+            "detail": "Formula or expression",
+            "require": "m",
+            "repeat": "n",
+            "type": "rangeall"
+        }]
+    },
+    ],
     toolbar: {
         undo: 'Undo',
         redo: 'Redo',
@@ -8826,6 +8842,7 @@ export default {
         bold: 'Bold (Ctrl+B)',
         italic : 'Italic (Ctrl+I)',
         strikethrough: 'Strikethrough (Alt+Shift+5)',
+        underline: 'Underline',
         textColor: 'Text color',
         chooseColor: 'choose color',
         resetColor: 'Reset',
@@ -8859,6 +8876,7 @@ export default {
         screenshot: 'Screenshot',
         splitColumn: 'Split text',
         insertImage: 'Insert image',
+        insertLink: 'Insert link',
         dataVerification: 'Data verification',
         protection:"Protect the sheet",
 
@@ -9509,6 +9527,8 @@ export default {
         redoDelete:"Can be undo by Ctrl+Z",
         noHide:"Can't hide, at least keep one sheet tag",
         chartEditNoOpt:"This operation is not allowed in chart editing mode!",
+        sheetNameSpecCharError:"The name cannot contain:[ ] : \ ? * / ' \"",
+        sheetNamecannotIsEmptyError:"Sheet name cannot be empty"
     },
     conditionformat: {
         conditionformat_greaterThan: 'Conditionformat-GreaterThan',
@@ -9571,6 +9591,8 @@ export default {
         ruleTypeItem4: 'Format only values above or below the average',
         ruleTypeItem4_title: 'Is a value that satisfies the following conditions',
         ruleTypeItem5: 'Format only unique or repeated values',
+        ruleTypeItem6: 'Use formulas to determine which cells to format',
+        formula: 'Formula',
         textColor: 'Text color',
         cellColor: 'Cell color',
         confirm: 'Confirm',
@@ -9687,6 +9709,21 @@ export default {
         threeStars: '3 Stars',
         fiveQuadrantDiagram: 'Five-quadrant diagram',
         fiveBoxes: '5 Boxes',
+    },
+    insertLink: {
+        linkText: "Text",
+        linkType: "Link type",
+        external: "External link",
+        internal: "Internal link",
+        linkAddress: "Link address",
+        linkSheet: "Worksheet",
+        linkCell: "Cell reference",
+        linkTooltip: "Tooltip",
+        placeholder1: "Please enter the web link address",
+        placeholder2: "Please enter the cell to be quoted, example A1",
+        placeholder3: "Please enter the prompt content",
+        tooltipInfo1: "Please enter a valid link",
+        tooltipInfo2: "Please enter the correct cell reference",
     },
     dataVerification: {
         cellRange: 'Cell range',
@@ -9978,6 +10015,17 @@ export default {
         menuItemAreas:"Print areas",
         menuItemRows:"Print title rows",
         menuItemColumns:"Print title columns",
+    },
+    edit:{
+        typing:"typing",
+    },
+    websocket:{
+        success: 'WebSocket connection success',
+        refresh: 'An error occurred in the WebSocket connection, please refresh the page!',
+        wait: 'An error occurred in the WebSocket connection, please be patient!',
+        close: 'WebSocket connection closed',
+        contact: 'Server communication error occurred, please refresh the page and try again, if not, please contact the administrator!',
+        support: 'The current browser does not support WebSocket',
     }
   };
   

@@ -5,6 +5,7 @@ import conditionformat from './conditionformat';
 import luckysheetPostil from './postil';
 import imageCtrl from './imageCtrl';
 import dataVerificationCtrl from './dataVerificationCtrl';
+import hyperlinkCtrl from './hyperlinkCtrl';
 import {zoomRefreshView,zoomNumberDomBind} from './zoom';
 import { createFilter, createFilterOptions, labelFilterOptionState } from './filter';
 import formula from '../global/formula';
@@ -22,6 +23,8 @@ import {
 } from '../global/refresh';
 import { getSheetIndex } from '../methods/get';
 import Store from '../store';
+import { selectHightlightShow } from './select';
+import method from '../global/method';
 
 function formulaHistoryHanddler(ctr, type="redo"){
     if(ctr==null){
@@ -82,7 +85,6 @@ const controlHistory = {
                 "dataVerification": ctr.dataVerification,
                 "dynamicArray": ctr.dynamicArray
             }
-
             jfrefreshgrid(ctr.data, ctr.range, allParam);
             // formula.execFunctionGroup(null, null, null, null, ctr.data);//取之前的数据
         }
@@ -166,7 +168,8 @@ const controlHistory = {
                 ctr.cf, 
                 ctr.af, 
                 ctr.freezen,
-                ctr.dataVerification
+                ctr.dataVerification,
+                ctr.hyperlink
             );
         }
         else if (ctr.type == "delRC") { //删除行列撤销操作
@@ -184,7 +187,8 @@ const controlHistory = {
                 ctr.cf, 
                 ctr.af, 
                 ctr.freezen,
-                ctr.dataVerification
+                ctr.dataVerification,
+                ctr.hyperlink
             );
         }
         else if (ctr.type == "deleteCell") { //删除单元格撤销操作
@@ -195,7 +199,8 @@ const controlHistory = {
                 ctr.calc, 
                 ctr.filterObj, 
                 ctr.cf,
-                ctr.dataVerification
+                ctr.dataVerification,
+                ctr.hyperlink
             );
         }
         else if (ctr.type == "showHidRows") { // 隐藏、显示行 撤销操作
@@ -344,6 +349,9 @@ const controlHistory = {
         else if (ctr.type == "updateDataVerificationOfCheckbox"){
             dataVerificationCtrl.refOfCheckbox(ctr.currentDataVerification, ctr.historyDataVerification, ctr.sheetIndex, ctr.data, ctr.range);
         }
+        else if (ctr.type == "updateHyperlink"){
+            hyperlinkCtrl.ref(ctr.currentHyperlink, ctr.historyHyperlink, ctr.sheetIndex, ctr.data, ctr.range);
+        }
         else if (ctr.type == "updateCF"){
             let historyRules = ctr["data"]["historyRules"];
 
@@ -414,7 +422,14 @@ const controlHistory = {
         }
         
         cleargridelement(e);
+        if (ctr.range) {
+            Store.luckysheet_select_save = ctr.range;
+            selectHightlightShow();
+        }
         Store.clearjfundo = true;
+
+        // 钩子函数
+        method.createHookFunction('updated',ctr)
     },
     undo: function () {
         if (Store.jfundo.length == 0) {
@@ -493,7 +508,8 @@ const controlHistory = {
                 ctr.curCf, 
                 ctr.curAf, 
                 ctr.curFreezen,
-                ctr.curDataVerification
+                ctr.curDataVerification,
+                ctr.curHyperlink
             );
         }
         else if (ctr.type == "delRC") { //删除行列重做操作
@@ -507,7 +523,8 @@ const controlHistory = {
                 ctr.curCf, 
                 ctr.curAf, 
                 ctr.curFreezen,
-                ctr.curDataVerification
+                ctr.curDataVerification,
+                ctr.curHyperlink
             );
         }
         else if (ctr.type == "deleteCell") { //删除单元格重做操作
@@ -518,7 +535,8 @@ const controlHistory = {
                 ctr.curCalc, 
                 ctr.curFilterObj, 
                 ctr.curCf,
-                ctr.curDataVerification
+                ctr.curDataVerification,
+                ctr.curHyperlink
             );
         }
         else if (ctr.type == "showHidRows") { // 隐藏、显示行 重做操作
@@ -650,6 +668,9 @@ const controlHistory = {
         else if (ctr.type == "updateDataVerificationOfCheckbox"){
             dataVerificationCtrl.refOfCheckbox(ctr.historyDataVerification, ctr.currentDataVerification, ctr.sheetIndex, ctr.curData, ctr.range);
         }
+        else if (ctr.type == "updateHyperlink") {
+            hyperlinkCtrl.ref(ctr.historyHyperlink, ctr.currentHyperlink, ctr.sheetIndex, ctr.curData, ctr.range);
+        }
         else if (ctr.type == "updateCF"){
             let currentRules = ctr["data"]["currentRules"];
 
@@ -713,8 +734,13 @@ const controlHistory = {
             zoomNumberDomBind();
             zoomRefreshView();
         }
-        
+
+        if (ctr.range) {
+            Store.luckysheet_select_save = ctr.range;
+            selectHightlightShow();
+        }
         Store.clearjfundo = true;
+
     }
 };
 

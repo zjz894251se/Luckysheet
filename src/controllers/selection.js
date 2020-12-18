@@ -8,7 +8,7 @@ import formula from '../global/formula';
 import { getBorderInfoCompute } from '../global/border';
 import { getdatabyselection, getcellvalue, datagridgrowth } from '../global/getdata';
 import { rowlenByRange } from '../global/getRowlen';
-import { isEditMode, hasPartMC } from '../global/validate';
+import { isEditMode, hasPartMC, isRealNum } from '../global/validate';
 import { jfrefreshgrid, jfrefreshgrid_pastcut } from '../global/refresh';
 import { genarate, update } from '../global/format';
 import { getSheetIndex } from '../methods/get';
@@ -510,20 +510,29 @@ const selection = {
             cpdata += "</tr>";
         }
         cpdata = '<table data-type="luckysheet_copy_action_table">' + colgroup + cpdata + '</table>';
-
+        
         Store.iscopyself = true;
 
         if (!clipboardData) {
-            let textarea = $("#luckysheet-copy-content");
-            textarea.html(cpdata);
-            textarea.focus();
-            textarea.select();
-            document.execCommand("selectAll");
-            document.execCommand("Copy");
+            // let textarea = $("#luckysheet-copy-content");
+            // textarea.html(cpdata);
+            // textarea.focus();
+            // textarea.select();
+            // document.execCommand("selectAll");
+            // document.execCommand("Copy");
+
             // 等50毫秒，keyPress事件发生了再去处理数据
-            setTimeout(function () { 
-                $("#luckysheet-copy-content").blur(); 
-            }, 10);
+            // setTimeout(function () { 
+            //     $("#luckysheet-copy-content").blur(); 
+            // }, 10);
+
+            var oInput = document.createElement('input');
+            oInput.value = cpdata;
+            document.body.appendChild(oInput);
+            oInput.select(); // 选择对象
+            document.execCommand("Copy");
+            oInput.style.display='none';
+            document.body.removeChild(oInput);
         }
         else {
             clipboardData.setData('Text', cpdata);
@@ -801,14 +810,36 @@ const selection = {
             for (let r = 0; r < rlen; r++) {
                 let x = [].concat(d[r + curR]);
                 for (let c = 0; c < clen; c++) {
-                    let cell = {};
+                    
+                    let value = dataChe[r][c];
+                    if(isRealNum(value)){
+                        value = parseFloat(value);
+                    }
+                    let originCell = x[c + curC];
+                    if(originCell instanceof Object){
+                        originCell.v = value;
+                        if(originCell.ct!=null && originCell.ct.fa!=null){
+                            originCell.m = update(originCell["ct"]["fa"], value);
+                        }
+                        else{
+                            originCell.m = value;
+                        }
+                        
+                        if(originCell.f!=null && originCell.f.length>0){
+                            originCell.f = "";
+                            formula.delFunctionGroup(r + curR,c + curC,Store.currentSheetIndex);
+                        }
+                    }
+                    else{
+                        let cell = {};
+                        let mask = genarate(value);
+                        cell.v = mask[2];
+                        cell.ct = mask[1];
+                        cell.m = mask[0];
 
-                    let mask = genarate(dataChe[r][c]);
-                    cell.v = mask[2];
-                    cell.ct = mask[1];
-                    cell.m = mask[0];
-
-                    x[c + curC] = cell;
+                        x[c + curC] = cell;
+                    }
+                    
                 }
                 d[r + curR] = x;
             }
@@ -1723,6 +1754,10 @@ const selection = {
                             delete value["m"];
                             delete value["f"];
                             delete value["spl"];
+
+                            if(value.ct && value.ct.t == 'inlineStr'){
+                                delete value.ct;
+                            }
 
                             if(getObjType(x[c]) == "object"){
 

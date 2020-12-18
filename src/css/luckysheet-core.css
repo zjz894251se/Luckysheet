@@ -106,12 +106,19 @@
 }
 
 .luckysheet_info_detail_user {
-    right: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    position: absolute;
+	/* right: 20px; */
+	font-size: 12px;
+	cursor: pointer;
+	margin-left: 10px;
+	/* position: absolute; */
 }
-
+#luckysheet_info_detail_user_img {
+    vertical-align: middle;
+    height: 20px;
+    line-height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
 .luckysheet_info_detail_save {
     color: #828282;
     font-size: 12px;
@@ -979,9 +986,9 @@
 }
 
 .luckysheet-sta-c .luckysheet-sta-content {
-    position: absolute;
-    left: 0px;
-    right: 358px;
+    /* position: absolute; */
+    /* left: 0px; */
+    /* right: 358px; */
     height: 22px;
     line-height: 22px;
     text-align: right;
@@ -1055,7 +1062,8 @@ div.luckysheet-sheets-m:hover {
     top: 0;
     width: 6px;
     height: 100%;
-    z-index: 1005;
+    /* z-index: 1005; */
+    z-index: 1;/*因为会覆盖右击菜单，改为1*/
 }
 
 .docs-sheet-fade div {
@@ -1108,6 +1116,13 @@ div.luckysheet-sheets-m:hover {
     display: inline-block;
 }
 
+.luckysheet-sheet-container-menu-hide .luckysheet-sheets-item{
+    padding-right: 5px !important;
+}
+
+.luckysheet-sheet-container-menu-hide .luckysheet-sheets-item-menu{
+    display: none !important;
+}
 
 .luckysheet-sheet-area div.luckysheet-sheets-item {
     padding: 2px 6px;
@@ -2328,8 +2343,14 @@ body:not(.ewa-ipad) .luckysheet-rows-h-cell-sel:hover {
     padding-right: 10px;
     padding-left: 12px;
 }
-
-
+#luckysheet-sheet-list .luckysheet-cols-menuitem .luckysheet-cols-menuitem-content {
+    padding-right: 0px;
+    max-width: 430px;
+    min-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .luckysheet-filter-menu div.luckysheet-cols-menuitem {
     padding-top: 0px;
     padding-bottom: 0px;
@@ -2977,6 +2998,14 @@ fieldset[disabled] .btn-danger.focus {
 #luckysheet-sheet-list .luckysheet-cols-menuitem .luckysheet-cols-menuitem-content {
     padding-left: 5px;
 }
+/* 
+#luckysheet-sheet-list .luckysheet-cols-menuitem .luckysheet-cols-menuitem-content {
+    max-width: 420px;
+    min-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+} */
 
 
 #luckysheet-sheet-list .icon {
@@ -4346,7 +4375,6 @@ fieldset[disabled] .btn-danger.focus {
 }
 
 .luckysheet-modal-dialog-slider-list-title {
-    width: 100%;
     height: 20px;
     line-height: 25px;
     padding: 0px 5px;
@@ -4480,7 +4508,6 @@ fieldset[disabled] .btn-danger.focus {
     font-size: 13px;
     height: 20px;
     line-height: 20px;
-    width: 100%;
     padding-left: 5px;
 }
 
@@ -6755,7 +6782,12 @@ fieldset[disabled] .btn-danger.focus {
     left: 0;
     top: 0;
     cursor: move;
+    image-rendering: -moz-crisp-edges; /* Firefox */     
+    image-rendering: -o-crisp-edges; /* Opera */      
+    image-rendering: -webkit-optimize-contrast; /*Webkit (non-standard naming) */ 
+    image-rendering: crisp-edges;
 }
+
 #luckysheet-modal-dialog-cropping::before{
     content: "";
     outline: 1px solid #fff;
@@ -7048,13 +7080,54 @@ fieldset[disabled] .btn-danger.focus {
     box-shadow:none;
     background: none;
     box-shadow:none;
+    image-rendering: -moz-crisp-edges; /* Firefox */     
+    image-rendering: -o-crisp-edges; /* Opera */      
+    image-rendering: -webkit-optimize-contrast; /*Webkit (non-standard naming) */ 
+    image-rendering: crisp-edges;
 }
 
 .luckysheet-modal-dialog-image .luckysheet-modal-dialog-content, #luckysheet-modal-dialog-activeImage .luckysheet-modal-dialog-content{
     background: none;
 }
-
-
+/* 单元格日期选择 */
+.cell-date-picker{
+    position: absolute;
+    display: none;
+}
+/* 插入链接 */
+#luckysheet-insertLink-dialog{
+    user-select: none;
+}
+#luckysheet-insertLink-dialog .box{
+    font-size: 12px;
+}
+#luckysheet-insertLink-dialog .box-item{
+    height: 30px;
+    line-height: 30px;
+    margin-bottom: 10px;
+}
+#luckysheet-insertLink-dialog .box-item label{
+    display: inline-block;
+    width: 80px;
+    text-align: right;
+    margin-right: 10px;
+}
+#luckysheet-insertLink-dialog .box-item input{
+    width: 200px;
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid #d4d4d4;
+    outline-style: none;
+    box-sizing: border-box;
+}
+#luckysheet-insertLink-dialog .box-item select{
+    width: 200px;
+    height: 30px;
+    padding: 0 5px;
+    border: 1px solid #d4d4d4;
+    outline-style: none;
+    box-sizing: border-box;
+}
 /* 数据验证 */
 #luckysheet-dataVerification-dialog{
     user-select: none;

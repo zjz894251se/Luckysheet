@@ -11,6 +11,7 @@ import { modelHTML } from './constant';
 import { selectionCopyShow } from './select';
 import server from './server';
 import menuButton from './menuButton';
+import sheetmanage from './sheetmanage';
 import { getSheetIndex, getRangetxt } from '../methods/get';
 import locale from '../locale/locale';
 import Store from '../store';
@@ -281,6 +282,13 @@ const dataVerificationCtrl = {
             _this.selectRange = [];
 
             let range = _this.getRangeByTxt(txt);
+
+            formula.rangetosheet = Store.currentSheetIndex;
+
+            if(range[0].sheetIndex != Store.currentSheetIndex){
+                sheetmanage.changeSheetExec(range[0].sheetIndex);
+            }
+
             if(range.length > 0){
                 for(let s = 0; s < range.length; s++){
                     let r1 = range[s].row[0], r2 = range[s].row[1];
@@ -321,6 +329,13 @@ const dataVerificationCtrl = {
             _this.selectRange = [];
 
             let range = _this.getRangeByTxt(txt);
+
+            formula.rangetosheet = Store.currentSheetIndex;
+
+            if(range[0].sheetIndex != Store.currentSheetIndex){
+                sheetmanage.changeSheetExec(range[0].sheetIndex);
+            }
+
             if(range.length > 0){
                 for(let s = 0; s < range.length; s++){
                     let r1 = range[s].row[0], r2 = range[s].row[1];
@@ -370,6 +385,11 @@ const dataVerificationCtrl = {
             $("#luckysheet-modal-dialog-mask").show();
             $("#luckysheet-dataVerification-dialog").show();
 
+            if(formula.rangetosheet != null && formula.rangetosheet != Store.currentSheetIndex){
+                sheetmanage.changeSheetExec(formula.rangetosheet);
+                formula.rangetosheet = null;
+            }
+
             let range = [];
             selectionCopyShow(range);
         });
@@ -378,6 +398,11 @@ const dataVerificationCtrl = {
             $("#luckysheet-modal-dialog-mask").show();
             $("#luckysheet-dataVerification-dialog").show();
 
+            if(formula.rangetosheet != null && formula.rangetosheet != Store.currentSheetIndex){
+                sheetmanage.changeSheetExec(formula.rangetosheet);
+                formula.rangetosheet = null;
+            }
+
             let range = [];
             selectionCopyShow(range);
         });
@@ -385,6 +410,11 @@ const dataVerificationCtrl = {
             $("#luckysheet-dataVerificationRange-dialog").hide();
             $("#luckysheet-modal-dialog-mask").show();
             $("#luckysheet-dataVerification-dialog").show();
+
+            if(formula.rangetosheet != null && formula.rangetosheet != Store.currentSheetIndex){
+                sheetmanage.changeSheetExec(formula.rangetosheet);
+                formula.rangetosheet = null;
+            }
 
             let range = [];
             selectionCopyShow(range);
@@ -564,13 +594,35 @@ const dataVerificationCtrl = {
         });
 
         //确认按钮
-        $(document).off("click.confirm").on("click.confirm", "#luckysheet-dataVerification-dialog-confirm", function(e) {
+        $(document).off("click.dvSaveConfirm").on("click.dvSaveConfirm", "#luckysheet-dataVerification-dialog-confirm", function(e) {
             let rangeTxt = $("#luckysheet-dataVerification-dialog #data-verification-range input").val().trim();
             let range = _this.getRangeByTxt(rangeTxt);
 
             if(range.length == 0){
                 tooltip.info('<i class="fa fa-exclamation-triangle"></i>', dvText.selectCellRange2);
                 return;
+            }
+
+            let str = range[range.length - 1].row[0],
+                edr = range[range.length - 1].row[1],
+                stc = range[range.length - 1].column[0],
+                edc = range[range.length - 1].column[1];
+            let d = editor.deepCopyFlowData(Store.flowdata);
+
+            if(str < 0){
+                str = 0;
+            }
+
+            if(edr > d.length - 1){
+                edr = d.length - 1;
+            }
+
+            if(stc < 0){
+                stc = 0;
+            }
+
+            if(edc > d[0].length - 1){
+                edc = d[0].length - 1;
             }
 
             let type = $("#luckysheet-dataVerification-dialog #data-verification-type-select").val();
@@ -698,13 +750,6 @@ const dataVerificationCtrl = {
            
             let historyDataVerification = $.extend(true, {}, _this.dataVerification);
             let currentDataVerification = $.extend(true, {}, _this.dataVerification);
-
-            let str = range[range.length - 1].row[0],
-                edr = range[range.length - 1].row[1],
-                stc = range[range.length - 1].column[0],
-                edc = range[range.length - 1].column[1];
-
-            let d = editor.deepCopyFlowData(Store.flowdata);
 
             for(let r = str; r <= edr; r++){
                 for(let c = stc; c <= edc; c++){
@@ -1225,9 +1270,16 @@ const dataVerificationCtrl = {
         if(type == 'dropdown'){
             let list = _this.getDropdownList(value1);
 
-            if(!list.includes(cellValue)){
-                return false;
+            let result = false;
+
+            for(let i = 0; i < list.length; i++){
+                if(list[i] == cellValue){
+                    result = true;
+                    break;
+                }
             }
+
+            return result;
         }
         else if(type == 'checkbox'){
 
@@ -1425,6 +1477,15 @@ const dataVerificationCtrl = {
             'left': col_pre,
             'top': row,
         });
+
+        let myh = $("#luckysheet-dataVerification-dropdown-List").outerHeight();
+        let currentWinH = $("#luckysheet-cell-main")[0].scrollHeight;
+
+        if(row + myh > currentWinH - 42 - 6){
+            $("#luckysheet-dataVerification-dropdown-List").css({
+                'top': row_pre - myh,
+            })
+        }
     },
     getDropdownList: function(txt){
         let list = [];
@@ -1500,7 +1561,7 @@ const dataVerificationCtrl = {
         let _this = this;
 
         if (Store.clearjfundo) {
-            Store.jfundo = [];
+            Store.jfundo.length  = 0;
 
             let redo = {};
             redo["type"] = "updateDataVerification";
@@ -1526,7 +1587,7 @@ const dataVerificationCtrl = {
         let _this = this;
 
         if (Store.clearjfundo) {
-            Store.jfundo = [];
+            Store.jfundo.length  = 0;
 
             let redo = {};
             redo["type"] = "updateDataVerificationOfCheckbox";
